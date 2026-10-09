@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>Buttermark</title>
+<link rel="icon" type="image/svg+xml" href="assets/buttermark-icon.svg">
+<meta name="description" content="Markdown that melts as you write. A desktop markdown editor for Windows, macOS and Linux. Plain files on your own disk, no account.">
+<script>
+// A tag bumps this line and nothing else.
+const RELEASE = { version: "v1.0.0-alpha.3", date: "October 2026" };
+// The page's theme is the reader's choice, Fresh until they make one. Set before paint.
+try { document.documentElement.dataset.theme = localStorage.getItem("bm-theme") || "fresh"; } catch (e) { document.documentElement.dataset.theme = "fresh"; }
+</script>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/themes.css">
+<style>
+/* ---- page ---- */
+* { box-sizing: border-box; }
+html { background: var(--bm-canvas); }
+body {
+  margin: 0;
+  background: var(--bm-canvas);
+  color: var(--bm-ink);
+  font: var(--bm-font-size) / var(--bm-line-height) var(--bm-font-serif);
+  font-size-adjust: var(--bm-x-height);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1, h2 { color: var(--bm-ink-heading); font-weight: var(--bm-heading-weight); line-height: var(--bm-heading-line-height); margin: 0; }
+h1 { font-size: var(--bm-h1-size); }
+h2 { font-size: var(--bm-h3-size); margin-bottom: 0.15em; }
+p { margin: 0 0 1em; }
+a { color: var(--bm-accent-text); text-decoration: underline; text-decoration-color: var(--bm-link-underline); text-underline-offset: 0.15em; }
+a:hover { color: var(--bm-accent-text-hover); }
+:focus-visible { outline: 2px solid var(--bm-accent-text); outline-offset: 2px; border-radius: var(--bm-radius-code); }
+.ui { font-family: var(--bm-font-ui); font-size-adjust: none; }
+.quiet { color: var(--bm-ink-2); }
+.bm-icon { width: 18px; height: 18px; stroke-width: var(--bm-icon-stroke); flex: none; }
+
+.wrap { width: min(100% - 2 * var(--bm-space-4), 1040px); margin-inline: auto; }
+.measure { max-width: var(--bm-measure); margin-inline: auto; }
+section { padding-block: 28px; }
+@media (min-width: 720px) { section { padding-block: 48px; } }
+
+/* ---- the top line: the logo and the theme pill, nothing else ---- */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding-block: var(--bm-space-4); }
+.logo { display: block; height: 22px; width: auto; }
+.logo-neg, :root[data-theme="evening"] .logo-pos, :root[data-theme="midnight-oil"] .logo-pos { display: none; }
+:root[data-theme="evening"] .logo-neg, :root[data-theme="midnight-oil"] .logo-neg { display: block; }
+.pill-wrap { position: relative; }
+.pill {
+  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  color: var(--bm-ink-2); background: var(--bm-surface-raised); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-md); cursor: pointer; padding: 0;
+  transition: background var(--bm-motion-base) var(--bm-ease-out), color var(--bm-motion-base) var(--bm-ease-out);
+}
+.pill:hover, .pill[aria-expanded="true"] { color: var(--bm-ink); background: var(--bm-surface-chrome); }
+.menu {
+  position: absolute; right: 0; top: calc(100% + var(--bm-space-1)); min-width: 164px; z-index: 3;
+  background: var(--bm-surface-raised); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-2xl); box-shadow: var(--bm-shadow-menu); padding: var(--bm-menu-pad); margin: 0;
+}
+.menu[hidden] { display: none; }
+.menu button {
+  display: flex; align-items: center; gap: var(--bm-space-2); width: 100%;
+  font: 12.5px / var(--bm-leading-ui) var(--bm-font-ui); color: var(--bm-ink); text-align: left;
+  background: none; border: 0; border-radius: var(--bm-radius-md); padding: var(--bm-menu-row-pad); cursor: pointer;
+}
+.menu button:hover { background: var(--bm-surface-chrome); }
+.menu button .bm-icon { width: 16px; height: 16px; margin-left: auto; visibility: hidden; }
+.menu button[aria-checked="true"] .bm-icon { visibility: visible; }
+
+/* ---- a live field: the app's editor, no chrome around it ---- */
+.card { background: var(--bm-surface-raised); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-card); box-shadow: var(--bm-shadow-raised); overflow: hidden; }
+.card:focus-within { box-shadow: var(--bm-shadow-raised), 0 0 0 2px var(--bm-selection); }
+.live { --bm-measure: 100%; text-align: left; }
+.live .cm-editor { background: transparent; }
+.live .cm-editor.cm-focused { outline: none; }
+/* a 16:10 frame, the field filling it */
+.frame { position: relative; aspect-ratio: 16 / 10; width: 100%; margin: 0; --bm-space-page-y: 6%; --bm-space-page-x: 6%; }
+.frame .cm-editor { height: 100%; }
+.frame .cm-scroller { overflow: hidden !important; }
+/* the status bar, from chrome.css (the DOM is rebuilt in fields.ts over the app's own model) */
+.bm-statusbar { display: flex; align-items: stretch; background: var(--bm-surface-chrome); border-top: 1px solid var(--bm-border); font-family: var(--bm-font-ui); font-size: var(--bm-text-status); line-height: var(--bm-leading-ui); color: var(--bm-ink-2); user-select: none; font-size-adjust: none; }
+.bm-status-pane { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--bm-space-3); padding: var(--bm-statusbar-pad-y) var(--bm-statusbar-pad-x); height: var(--bm-statusbar-h); white-space: nowrap; overflow: hidden; }
+.bm-status-group { flex: 0 0 auto; display: flex; align-items: center; gap: var(--bm-space-2); }
+.bm-status-item { display: inline-flex; align-items: center; gap: var(--bm-space-2); }
+.bm-status-item:first-child > .bm-status-sep { display: none; }
+.bm-status-sep { color: var(--bm-ink-3); }
+.bm-storage { display: inline-flex; align-items: center; gap: var(--bm-space-1); color: var(--bm-ink-3); }
+.bm-storage .bm-icon { width: 16px; height: 16px; }
+/* one tab, from chrome.css */
+.bm-tabrow { display: flex; align-items: flex-end; background: var(--bm-surface-chrome); border-bottom: 1px solid var(--bm-border); padding: var(--bm-tab-top) var(--bm-tab-strip-pad) 0; font-family: var(--bm-font-ui); font-size-adjust: none; }
+.bm-tab { display: flex; align-items: center; min-width: var(--bm-tab-min-width); max-width: var(--bm-tab-max-width); padding: 0 var(--bm-space-2) 0 0; border: 1px solid var(--bm-border); border-bottom: none; border-radius: var(--bm-radius-lg) var(--bm-radius-lg) 0 0; background: var(--bm-surface-raised); color: var(--bm-ink); font-size: var(--bm-text-sm); font-weight: 500; }
+.bm-tab-button { display: flex; align-items: center; gap: var(--bm-space-2); min-width: 0; flex: 1 1 auto; padding: var(--bm-tab-pad-y) 0 var(--bm-tab-pad-y) var(--bm-tab-pad-x); border: none; background: transparent; color: inherit; font: inherit; }
+.bm-tab-label { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- 1 · hero ---- */
+.hero { padding-top: var(--bm-space-2); padding-bottom: var(--bm-space-8); text-align: center; }
+.hero .live { --bm-font-size: clamp(20px, 3.6vw, 44px); --bm-line-height: 1.35; --bm-space-page-y: 0px; --bm-space-page-x: 0px; padding: calc(var(--bm-font-size) * 0.6) calc(var(--bm-font-size) * 0.9); }
+/* three lines of the sentence size, no more */
+.hero .cm-editor { height: calc(3 * var(--bm-line-height) * var(--bm-font-size)); }
+.hero .cm-scroller { align-items: center !important; overflow: hidden !important; } /* CM pins both with !important */
+.hint { margin: var(--bm-space-2) 0 0; font: 13.5px / 1.45 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink-3); text-align: left; }
+.hero h1 { margin-top: var(--bm-space-6); }
+.download { margin-top: var(--bm-space-4); display: flex; flex-direction: column; align-items: center; gap: var(--bm-space-3); }
+.button {
+  display: inline-flex; align-items: center; gap: var(--bm-space-2);
+  font: 500 15px / 1 var(--bm-font-ui); font-size-adjust: none;
+  background: var(--bm-butter); color: var(--bm-ink-on-butter);
+  border: 0; border-radius: var(--bm-radius-lg); padding: 12px 20px;
+  text-decoration: none; cursor: pointer;
+  transition: background var(--bm-motion-base) var(--bm-ease-out);
+}
+.button:hover { background: var(--bm-butter-hover); color: var(--bm-ink-on-butter); }
+.button .size { font-family: var(--bm-font-mono); font-weight: 400; opacity: 0.8; }
+.also { font: 13.5px / 1.45 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink-2); margin: 0; }
+
+/* ---- 2 · alpha strip ---- */
+.strip { background: var(--bm-surface-chrome); padding-block: var(--bm-space-6); }
+.strip p { margin-block: 0; padding-inline: var(--bm-space-4); }
+
+/* ---- 3 · getting past the warning: a step path each ---- */
+.panels { display: grid; gap: var(--bm-space-8); }
+@media (min-width: 720px) { .panels { grid-template-columns: 1fr 1fr; } }
+.panel p { margin: 0; }
+.steps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: var(--bm-space-3) 0 var(--bm-space-4); }
+.step {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 500 13px / 1 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink);
+  background: var(--bm-surface-raised); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-lg); padding: 8px 10px;
+}
+.step .bm-icon { width: 16px; height: 16px; color: var(--bm-ink-2); }
+.join { width: 16px; height: 16px; color: var(--bm-ink-3); stroke-width: var(--bm-icon-stroke); flex: none; }
+.linux { margin-top: var(--bm-space-6); text-align: center; }
+
+/* ---- 4 · stories ---- */
+.story { display: grid; gap: var(--bm-space-6); align-items: center; padding-block: var(--bm-space-5); }
+@media (min-width: 720px) {
+  .story { grid-template-columns: 1fr 1fr; gap: var(--bm-space-10); padding-block: 28px; }
+  .story:nth-child(even) .card { order: 2; }
+}
+.story p { margin: 0; }
+.melt .frame { --bm-font-size: clamp(16px, 2.2vw, 20px); }
+.ask .frame { --bm-font-size: clamp(14px, 1.8vw, 17px); --bm-space-page-x: 12%; } /* room at the margin for the arrival chip */
+.yours .frame { --bm-font-size: 15px; aspect-ratio: auto; height: 236px; }
+.yours .frame .cm-scroller { overflow: auto !important; scrollbar-width: thin; scrollbar-color: var(--bm-scrollbar-thumb) transparent; } /* the note is longer than the frame; it scrolls */
+
+/* ---- 5 · reader: a real read-mode render, mid-scroll under its pinned header ---- */
+.reader .card { max-width: 720px; margin-inline: auto; position: relative; }
+.reader .frame { aspect-ratio: auto; height: 220px; --bm-space-page-y: 0px; --bm-space-page-x: 24px; --bm-font-size: 14px; }
+.reader .frame .cm-scroller { overflow: auto !important; scrollbar-width: thin; scrollbar-color: var(--bm-scrollbar-thumb) transparent; }
+.reader .card::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 56px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--bm-surface-raised)); }
+.reader p { margin: var(--bm-space-6) auto 0; max-width: var(--bm-measure); text-align: center; color: var(--bm-ink-2); }
+
+/* ---- 6 · themes: one field, re-dressed by the four themes ---- */
+.stage {
+  max-width: 720px; margin-inline: auto;
+  background: var(--bm-canvas); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-card); padding: var(--bm-space-8);
+  --bm-font-size: 17px; --bm-space-page-y: 0px; --bm-space-page-x: 0px;
+  transition: background-color 640ms var(--bm-ease-out), border-color 640ms var(--bm-ease-out);
+}
+.stage .cm-editor, .stage .cm-editor * { transition: color 640ms var(--bm-ease-out), background-color 640ms var(--bm-ease-out); }
+.names { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--bm-space-2) var(--bm-space-3); margin: var(--bm-space-5) 0 0; padding: 0; list-style: none; }
+.name { font: 500 15px / 1 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink-2); background: none; border: 0; border-radius: var(--bm-radius-lg); padding: 8px 10px 6px; cursor: pointer; border-bottom: 2px solid transparent; transition: color var(--bm-motion-base) var(--bm-ease-out), border-color var(--bm-motion-base) var(--bm-ease-out); }
+.name:hover { color: var(--bm-ink-heading); }
+.name[aria-current="true"] { color: var(--bm-ink-heading); border-bottom-color: var(--bm-butter); }
+.themes p { margin: var(--bm-space-4) auto 0; max-width: var(--bm-measure); text-align: center; }
+
+/* ---- 7 · footer ---- */
+footer { padding: var(--bm-space-6) 0 var(--bm-space-8); text-align: center; font: 12.5px / 1.6 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink-2); }
+footer .v { font-family: var(--bm-font-mono); }
+footer .mark { height: 14px; width: auto; vertical-align: -2px; margin-right: var(--bm-space-2); }
+
+/* ---- motion: sections rise 8px and fade in, once ---- */
+.js .rise { opacity: 0; transform: translateY(8px); transition: opacity 200ms var(--bm-ease-out), transform 200ms var(--bm-ease-out); }
+.js .rise.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .rise { opacity: 1; transform: none; transition: none; }
+  .stage, .stage .cm-editor, .stage .cm-editor *, .name, .pill, .button { transition: none; }
+}
+@media (max-width: 719px) {
+  .hero .cm-editor { height: calc(4 * var(--bm-line-height) * var(--bm-font-size)); } /* the sentence wraps to three at phone width; one line of air */
+}
+</style>
+</head>
+<body class="no-js">
+<script>document.body.className = "js";</script>
+
+<!-- the symbols this page uses, copied verbatim from design/system/assets/icons.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+<symbol id="bm-download" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.4v8.8m0 0-3.1-3.1M10 12.2l3.1-3.1"></path><path d="M4.6 13.6v1.8a1.6 1.6 0 0 0 1.6 1.6h7.6a1.6 1.6 0 0 0 1.6-1.6v-1.8"></path></g></symbol>
+<symbol id="bm-check" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 10.4l3.6 3.6 7.2-8"></path></g></symbol>
+<symbol id="bm-close" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5.6 5.6l8.8 8.8M14.4 5.6l-8.8 8.8"></path></g></symbol>
+<symbol id="bm-edit" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 15.6l.8-3.4L13.4 4a1.6 1.6 0 0 1 2.3 0l.3.3a1.6 1.6 0 0 1 0 2.3L7.8 14.8l-3.4.8z"></path><path d="M12.2 5.2l2.6 2.6"></path></g></symbol>
+<symbol id="bm-local-storage" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.6" width="14.4" height="10.8" rx="2.8"></rect><path d="M2.8 10.6h14.4"></path><circle cx="5.9" cy="13" r="1.05" fill="currentColor" stroke="none"></circle><path d="M8.6 13h5.6"></path></g></symbol>
+<symbol id="bm-lock" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="8.6" width="11.2" height="8" rx="2.6"></rect><path d="M7.2 8.6V7a2.8 2.8 0 0 1 5.6 0v1.6"></path></g></symbol>
+<symbol id="bm-unlock" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="8.6" width="11.2" height="8" rx="2.6"></rect><path d="M7.2 8.6V7a2.8 2.8 0 0 1 5.6 0"></path></g></symbol>
+<symbol id="bm-settings" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 6.6h4.4M13 6.6h3.2M3.8 13.4h3.2M12 13.4h4.2"></path><circle cx="10.6" cy="6.6" r="2.1"></circle><circle cx="9.4" cy="13.4" r="2.1"></circle></g></symbol>
+<symbol id="bm-more" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="4.9" cy="10" r="1.15" fill="currentColor" stroke="none"></circle><circle cx="10" cy="10" r="1.15" fill="currentColor" stroke="none"></circle><circle cx="15.1" cy="10" r="1.15" fill="currentColor" stroke="none"></circle></g></symbol>
+<symbol id="bm-chevron" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8.2 5.4l4.6 4.6-4.6 4.6"></path></g></symbol>
+<symbol id="bm-theme-light" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.4"></circle><path d="M10 3.2v1.5M10 15.3v1.5M3.2 10h1.5M15.3 10h1.5M5.2 5.2l1.1 1.1M13.7 13.7l1.1 1.1M14.8 5.2l-1.1 1.1M6.3 13.7l-1.1 1.1"></path></g></symbol>
+<symbol id="bm-theme-dark" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.6 12.3A6.3 6.3 0 0 1 7.7 4.4a6.5 6.5 0 1 0 7.9 7.9z"></path></g></symbol>
+</svg>
+
+<header class="topbar wrap">
+  <a href="./" aria-label="Buttermark"><img class="logo logo-pos" src="assets/buttermark-logo.svg" alt="Buttermark" width="749" height="80"><img class="logo logo-neg" src="assets/buttermark-logo-negative.svg" alt="Buttermark" width="749" height="80"></a>
+  <div class="pill-wrap">
+    <button class="pill" id="pill" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Theme"><svg class="bm-icon" aria-hidden="true"><use id="pill-icon" href="#bm-theme-light"/></svg></button>
+    <div class="menu" id="theme-menu" role="menu" aria-label="Theme" hidden>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="fresh">Fresh<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="linen">Linen<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="evening">Evening<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="midnight-oil">Midnight Oil<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- 1 · hero: the app's field and its status bar -->
+<section class="hero wrap">
+  <div class="card">
+    <div class="live" id="hero-field" aria-label="A Buttermark field. Go on, type."></div>
+    <div class="bm-statusbar" id="hero-status"></div>
+  </div>
+  <p class="hint">Go on, type.</p>
+  <h1>Markdown that melts as you write.</h1>
+  <div class="download">
+    <a class="button" id="dl" href="https://github.com/buttermark/releases/releases/latest/download/Buttermark-windows-setup.exe"><svg class="bm-icon" aria-hidden="true"><use href="#bm-download"/></svg><span id="dl-label">Download for Windows</span><span class="size" id="dl-size">6.5 MB</span></a>
+    <p class="also" id="also">also for <a href="https://github.com/buttermark/releases/releases/latest/download/Buttermark-macos-arm64.dmg">macOS (Apple silicon)</a> · Linux (<a href="https://github.com/buttermark/releases/releases/latest/download/Buttermark-linux-amd64.deb">.deb</a> · <a href="https://github.com/buttermark/releases/releases/latest/download/Buttermark-linux-amd64.AppImage">AppImage</a>)</p>
+    <p class="also"><a href="guide/">Read the guide</a></p>
+  </div>
+</section>
+
+<!-- 2 · alpha strip -->
+<div class="strip">
+  <p class="measure">This is Buttermark's first alpha. It writes, reads and keeps your files safe; the edges are still rough and the installers aren't signed yet, so your computer will warn you once. Tell us what felt good and what didn't: <a href="mailto:contact@buttermark.app">feedback</a>.</p>
+</div>
+
+<!-- 3 · getting past the warning -->
+<section class="wrap rise">
+  <div class="panels">
+    <div class="panel">
+      <h2>Windows</h2>
+      <div class="steps">
+        <span class="step"><svg class="bm-icon" aria-hidden="true"><use href="#bm-lock"/></svg>Windows protected your PC</span>
+        <svg class="join" aria-hidden="true"><use href="#bm-chevron"/></svg>
+        <span class="step"><svg class="bm-icon" aria-hidden="true"><use href="#bm-more"/></svg>More info</span>
+        <svg class="join" aria-hidden="true"><use href="#bm-chevron"/></svg>
+        <span class="step"><svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg>Run anyway</span>
+      </div>
+      <p>Windows shows a blue "protected your PC" screen the first time. Click More info, then Run anyway. It won't ask again.</p>
+    </div>
+    <div class="panel">
+      <h2>macOS</h2>
+      <div class="steps">
+        <span class="step"><svg class="bm-icon" aria-hidden="true"><use href="#bm-settings"/></svg>System Settings</span>
+        <svg class="join" aria-hidden="true"><use href="#bm-chevron"/></svg>
+        <span class="step"><svg class="bm-icon" aria-hidden="true"><use href="#bm-lock"/></svg>Privacy &amp; Security</span>
+        <svg class="join" aria-hidden="true"><use href="#bm-chevron"/></svg>
+        <span class="step"><svg class="bm-icon" aria-hidden="true"><use href="#bm-unlock"/></svg>Open Anyway</span>
+      </div>
+      <p>macOS will say Buttermark can't be opened. Open System Settings, go to Privacy &amp; Security, scroll down and click Open Anyway. Once is enough.</p>
+    </div>
+  </div>
+  <p class="linux quiet">Linux: the .deb is for Ubuntu 24.04 or newer. The AppImage needs glibc 2.39; mark it executable, then run it.</p>
+</section>
+
+<!-- 4 · three stories, each a live field -->
+<section class="wrap">
+  <div class="story melt rise">
+    <div class="card"><div class="frame live" id="melt-field" aria-label="A Buttermark field with a heading"></div></div>
+    <div>
+      <h2>The feel</h2>
+      <p>Type two asterisks around a word and watch them dissolve when you leave. Arrow back in and they return. Headings, lists and code all behave this way, so the page looks like the page while you're still writing it.</p>
+    </div>
+  </div>
+
+  <div class="story ask rise">
+    <div class="card"><div class="frame live" id="ask-field" aria-label="A Buttermark field with an ask and its answer"></div></div>
+    <div>
+      <h2>Ask your agent</h2>
+      <p>Select a sentence, press Ask, say what you want. Leave a few around the draft. One button hands them to whatever agent you already use, and the answers land back in your text with a highlighter wash and three small buttons: keep, take back, ask again. Buttermark never calls a model. Your agent, your account, your file.</p>
+    </div>
+  </div>
+
+  <div class="story yours rise">
+    <div class="card">
+      <div class="bm-tabrow"><div class="bm-tab"><span class="bm-tab-button"><span class="bm-tab-label">tuesday.md</span></span></div></div>
+      <div class="frame live" id="yours-field" aria-label="A Buttermark field with a short note"></div>
+      <div class="bm-statusbar" id="yours-status"></div>
+    </div>
+    <div>
+      <h2>Yours</h2>
+      <p>Buttermark writes ordinary .md files to your own disk. No account, no vault to tend, nothing leaves your machine unless you send it. Like butter: you buy it, it's yours, spread it how you like.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · reader line -->
+<section class="reader wrap rise">
+  <div class="card"><div class="frame live" id="reader-field" aria-label="A table in read mode; its header stays pinned while it scrolls"></div></div>
+  <p>Open any .md your tools left behind. Sticky table headers, footnotes, a reading ruler, a skim view. It reads as well as it writes.</p>
+</section>
+
+<!-- 6 · themes row -->
+<section class="themes wrap rise">
+  <div class="stage live" id="stage"><div id="themes-field" aria-label="A paragraph in a Buttermark field, dressed by each theme in turn"></div></div>
+  <ol class="names" id="names">
+    <li><button class="name" type="button" data-theme="fresh">Fresh</button></li><li><button class="name" type="button" data-theme="linen">Linen</button></li><li><button class="name" type="button" data-theme="evening">Evening</button></li><li><button class="name" type="button" data-theme="midnight-oil">Midnight Oil</button></li>
+  </ol>
+  <p>Fresh, Linen, Evening, Midnight Oil. Or open the Maker and mix your own.</p>
+</section>
+
+</main>
+
+<!-- 7 · footer -->
+<footer class="wrap">
+  <img class="mark" src="assets/buttermark-icon.svg" alt="" width="92" height="80"><span class="v" id="rel-version"></span> · <span id="rel-date"></span> · plain files, no account, nothing phones home · <a href="guide/">guide</a> · <a id="rel-notes" href="https://github.com/buttermark/releases/releases/latest">release notes</a> · <a href="mailto:contact@buttermark.app">say hello</a>
+</footer>
+
+<script>
+// Footer: one constant, three slots.
+document.getElementById("rel-version").textContent = RELEASE.version;
+document.getElementById("rel-date").textContent = RELEASE.date;
+document.getElementById("rel-notes").href = "https://github.com/buttermark/releases/releases/tag/" + RELEASE.version;
+
+// The download button names the reader's OS; the others stay beneath.
+// Linux: the .deb is primary, the AppImage the fallback (no size shown).
+(function () {
+  var base = "https://github.com/buttermark/releases/releases/latest/download/";
+  var link = function (file, text) { return '<a href="' + base + file + '">' + text + "</a>"; };
+  var os = {
+    windows: { name: "Windows", file: "Buttermark-windows-setup.exe", size: "6.5 MB", also: link("Buttermark-windows-setup.exe", "Windows") },
+    macos:   { name: "macOS (Apple silicon)", file: "Buttermark-macos-arm64.dmg", size: "8 MB", also: link("Buttermark-macos-arm64.dmg", "macOS (Apple silicon)") },
+    linux:   { name: "Linux", file: "Buttermark-linux-amd64.deb", size: "10 MB", also: "Linux (" + link("Buttermark-linux-amd64.deb", ".deb") + " · " + link("Buttermark-linux-amd64.AppImage", "AppImage") + ")" }
+  };
+  var p = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "").toLowerCase();
+  var mine = p.indexOf("mac") === 0 ? "macos" : p.indexOf("linux") === 0 ? "linux" : "windows";
+  document.getElementById("dl").href = base + os[mine].file;
+  document.getElementById("dl-label").textContent = "Download for " + os[mine].name;
+  document.getElementById("dl-size").textContent = os[mine].size;
+  var others = Object.keys(os).filter(function (k) { return k !== mine; }).map(function (k) { return os[k].also; });
+  document.getElementById("also").innerHTML = mine === "linux"
+    ? "also the " + link("Buttermark-linux-amd64.AppImage", "AppImage") + " · " + others.join(" · ")
+    : "also for " + others.join(" · ");
+})();
+
+// ONE theme state: the pill, the names under the themes row and the page
+// itself all read and write it. The row's field is re-dressed on its own
+// clock until someone chooses; a choice dresses the whole page and holds
+// the row there.
+(function () {
+  var THEMES = ["fresh", "linen", "evening", "midnight-oil"];
+  var DARK = { evening: true, "midnight-oil": true };
+  var html = document.documentElement;
+  var stage = document.getElementById("stage");
+  var names = document.querySelectorAll("#names .name"), items = document.querySelectorAll("#theme-menu [data-theme]");
+  var pill = document.getElementById("pill"), menu = document.getElementById("theme-menu"), icon = document.getElementById("pill-icon");
+  var cur = -1, timer = null, held = false;
+
+  function show(i) {
+    if (cur >= 0) names[cur].removeAttribute("aria-current");
+    cur = i;
+    stage.className = "stage live t-" + THEMES[i];
+    names[cur].setAttribute("aria-current", "true");
+  }
+  function start() { if (!held && !timer && !matchMedia("(prefers-reduced-motion: reduce)").matches) timer = setInterval(function () { show((cur + 1) % 4); }, 4000); }
+  function stop() { clearInterval(timer); timer = null; }
+
+  function setTheme(id) {
+    html.dataset.theme = id;
+    try { localStorage.setItem("bm-theme", id); } catch (e) {}
+    icon.setAttribute("href", DARK[id] ? "#bm-theme-dark" : "#bm-theme-light");
+    items.forEach(function (b) { b.setAttribute("aria-checked", String(b.dataset.theme === id)); });
+    held = true; stop(); show(THEMES.indexOf(id));
+  }
+
+  // first paint: the page's theme is where the row starts
+  var initial = THEMES.indexOf(html.dataset.theme); if (initial < 0) initial = 0;
+  show(initial);
+  icon.setAttribute("href", DARK[THEMES[initial]] ? "#bm-theme-dark" : "#bm-theme-light");
+  items.forEach(function (b) { b.setAttribute("aria-checked", String(b.dataset.theme === THEMES[initial])); });
+
+  names.forEach(function (b) { b.addEventListener("click", function () { setTheme(b.dataset.theme); }); });
+  stage.addEventListener("mouseenter", stop);
+  stage.addEventListener("mouseleave", start);
+  start();
+
+  // the pill's menu
+  function open(on) { menu.hidden = !on; pill.setAttribute("aria-expanded", String(on)); if (on) items[0].focus(); }
+  pill.addEventListener("click", function () { open(menu.hidden); });
+  items.forEach(function (b) { b.addEventListener("click", function () { setTheme(b.dataset.theme); open(false); pill.focus(); }); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { open(false); pill.focus(); } });
+  document.addEventListener("click", function (e) { if (!menu.hidden && !menu.contains(e.target) && e.target !== pill && !pill.contains(e.target)) open(false); });
+})();
+
+// Sections rise once on first scroll into view.
+(function () {
+  var items = document.querySelectorAll(".rise");
+  if (!("IntersectionObserver" in window)) { items.forEach(function (el) { el.classList.add("in"); }); return; }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: 0.2 });
+  items.forEach(function (el) { io.observe(el); });
+})();
+</script>
+<script src="assets/editor.js"></script>
+</body>
+</html>

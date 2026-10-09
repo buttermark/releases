@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex, nofollow">
+<title>Buttermark guide</title>
+<link rel="icon" type="image/svg+xml" href="../assets/buttermark-icon.svg">
+<meta name="description" content="Everything Buttermark does, in the order you'll want it: writing, reading, asking your agent, notes, themes, workspaces, settings, keyboard, files.">
+<script>
+// A tag bumps this line and nothing else.
+const RELEASE = { version: "v1.0.0-alpha.3", date: "October 2026" };
+// The page's theme is the reader's choice, Fresh until they make one. Set before paint.
+try { document.documentElement.dataset.theme = localStorage.getItem("bm-theme") || "fresh"; } catch (e) { document.documentElement.dataset.theme = "fresh"; }
+</script>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="../assets/themes.css">
+<style>
+/* ---- page: the landing page's bones, one column ---- */
+* { box-sizing: border-box; }
+html { background: var(--bm-canvas); }
+body {
+  margin: 0;
+  background: var(--bm-canvas);
+  color: var(--bm-ink);
+  font: var(--bm-font-size) / var(--bm-line-height) var(--bm-font-serif);
+  font-size-adjust: var(--bm-x-height);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1 { color: var(--bm-ink-heading); font-weight: var(--bm-heading-weight); line-height: var(--bm-heading-line-height); margin: 0; font-size: var(--bm-h1-size); }
+a { color: var(--bm-accent-text); text-decoration: underline; text-decoration-color: var(--bm-link-underline); text-underline-offset: 0.15em; }
+a:hover { color: var(--bm-accent-text-hover); }
+:focus-visible { outline: 2px solid var(--bm-accent-text); outline-offset: 2px; border-radius: var(--bm-radius-code); }
+.bm-icon { width: 18px; height: 18px; stroke-width: var(--bm-icon-stroke); flex: none; }
+.wrap { width: min(100% - 2 * var(--bm-space-4), 1040px); margin-inline: auto; }
+
+/* ---- the top line: the logo and the theme pill ---- */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding-block: var(--bm-space-4); }
+.logo { display: block; height: 22px; width: auto; }
+.logo-neg, :root[data-theme="evening"] .logo-pos, :root[data-theme="midnight-oil"] .logo-pos { display: none; }
+:root[data-theme="evening"] .logo-neg, :root[data-theme="midnight-oil"] .logo-neg { display: block; }
+.pill-wrap { position: relative; }
+.pill {
+  display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  color: var(--bm-ink-2); background: var(--bm-surface-raised); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-md); cursor: pointer; padding: 0;
+  transition: background var(--bm-motion-base) var(--bm-ease-out), color var(--bm-motion-base) var(--bm-ease-out);
+}
+.pill:hover, .pill[aria-expanded="true"] { color: var(--bm-ink); background: var(--bm-surface-chrome); }
+.menu {
+  position: absolute; right: 0; top: calc(100% + var(--bm-space-1)); min-width: 164px; z-index: 3;
+  background: var(--bm-surface-raised); border: 1px solid var(--bm-border); border-radius: var(--bm-radius-2xl); box-shadow: var(--bm-shadow-menu); padding: var(--bm-menu-pad); margin: 0;
+}
+.menu[hidden] { display: none; }
+.menu button {
+  display: flex; align-items: center; gap: var(--bm-space-2); width: 100%;
+  font: 12.5px / var(--bm-leading-ui) var(--bm-font-ui); color: var(--bm-ink); text-align: left;
+  background: none; border: 0; border-radius: var(--bm-radius-md); padding: var(--bm-menu-row-pad); cursor: pointer;
+}
+.menu button:hover { background: var(--bm-surface-chrome); }
+.menu button .bm-icon { width: 16px; height: 16px; margin-left: auto; visibility: hidden; }
+.menu button[aria-checked="true"] .bm-icon { visibility: visible; }
+
+/* ---- the title and the two download buttons ---- */
+.head { padding-block: var(--bm-space-4) var(--bm-space-6); text-align: center; }
+.download { margin-top: var(--bm-space-4); display: flex; flex-direction: column; align-items: center; gap: var(--bm-space-3); }
+.button {
+  display: inline-flex; align-items: center; gap: var(--bm-space-2);
+  font: 500 15px / 1 var(--bm-font-ui); font-size-adjust: none;
+  background: var(--bm-butter); color: var(--bm-ink-on-butter);
+  border: 0; border-radius: var(--bm-radius-lg); padding: 12px 20px;
+  text-decoration: none; cursor: pointer;
+  transition: background var(--bm-motion-base) var(--bm-ease-out);
+}
+.button:hover { background: var(--bm-butter-hover); color: var(--bm-ink-on-butter); }
+.button .size { font-family: var(--bm-font-mono); font-weight: 400; opacity: 0.8; }
+.also { font: 13.5px / 1.45 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink-2); margin: 0; }
+.tail { padding-block: var(--bm-space-6) var(--bm-space-4); text-align: center; }
+
+/* ---- the guide: the app's own read mode, the page as its scroller ---- */
+.guide { text-align: left; }
+.guide .cm-editor { background: transparent; height: auto; }
+.guide .cm-editor.cm-focused { outline: none; }
+/* no inner scroll: the window scrolls, so a pinned table header sticks to the viewport */
+.guide .cm-scroller { overflow: visible !important; }
+.guide img { max-width: 100%; height: auto; }
+
+/* ---- footer ---- */
+footer { padding: var(--bm-space-6) 0 var(--bm-space-8); text-align: center; font: 12.5px / 1.6 var(--bm-font-ui); font-size-adjust: none; color: var(--bm-ink-2); }
+footer .v { font-family: var(--bm-font-mono); }
+footer .mark { height: 14px; width: auto; vertical-align: -2px; margin-right: var(--bm-space-2); }
+
+@media (prefers-reduced-motion: reduce) { .pill, .button { transition: none; } }
+</style>
+</head>
+<body>
+
+<!-- the symbols this page uses, copied verbatim from design/system/assets/icons.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+<symbol id="bm-download" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.4v8.8m0 0-3.1-3.1M10 12.2l3.1-3.1"></path><path d="M4.6 13.6v1.8a1.6 1.6 0 0 0 1.6 1.6h7.6a1.6 1.6 0 0 0 1.6-1.6v-1.8"></path></g></symbol>
+<symbol id="bm-check" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 10.4l3.6 3.6 7.2-8"></path></g></symbol>
+<symbol id="bm-theme-light" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.4"></circle><path d="M10 3.2v1.5M10 15.3v1.5M3.2 10h1.5M15.3 10h1.5M5.2 5.2l1.1 1.1M13.7 13.7l1.1 1.1M14.8 5.2l-1.1 1.1M6.3 13.7l-1.1 1.1"></path></g></symbol>
+<symbol id="bm-theme-dark" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15.6 12.3A6.3 6.3 0 0 1 7.7 4.4a6.5 6.5 0 1 0 7.9 7.9z"></path></g></symbol>
+</svg>
+
+<header class="topbar wrap">
+  <a href="../" aria-label="Buttermark"><img class="logo logo-pos" src="../assets/buttermark-logo.svg" alt="Buttermark" width="749" height="80"><img class="logo logo-neg" src="../assets/buttermark-logo-negative.svg" alt="Buttermark" width="749" height="80"></a>
+  <div class="pill-wrap">
+    <button class="pill" id="pill" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Theme"><svg class="bm-icon" aria-hidden="true"><use id="pill-icon" href="#bm-theme-light"/></svg></button>
+    <div class="menu" id="theme-menu" role="menu" aria-label="Theme" hidden>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="fresh">Fresh<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="linen">Linen<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="evening">Evening<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+      <button type="button" role="menuitemradio" aria-checked="false" data-theme="midnight-oil">Midnight Oil<svg class="bm-icon" aria-hidden="true"><use href="#bm-check"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="head">
+    <h1>Buttermark guide</h1>
+    <div class="download" data-download></div>
+  </div>
+
+  <!-- docs/guide.md, the same file the app opens from Help › Guide, in the app's read mode -->
+  <div class="guide" id="guide-field" aria-label="The Buttermark guide"></div>
+
+  <div class="tail">
+    <div class="download" data-download></div>
+  </div>
+</main>
+
+<footer class="wrap">
+  <img class="mark" src="../assets/buttermark-icon.svg" alt="" width="92" height="80"><span class="v" id="rel-version"></span> · <span id="rel-date"></span> · plain files, no account, nothing phones home · <a href="../">home</a> · <a id="rel-notes" href="https://github.com/buttermark/releases/releases/latest">release notes</a> · <a href="mailto:contact@buttermark.app">say hello</a>
+</footer>
+
+<script>
+// Footer: one constant, three slots.
+document.getElementById("rel-version").textContent = RELEASE.version;
+document.getElementById("rel-date").textContent = RELEASE.date;
+document.getElementById("rel-notes").href = "https://github.com/buttermark/releases/releases/tag/" + RELEASE.version;
+
+// The download button names the reader's OS; the others stay beneath. Twice: under the title, and at the end.
+(function () {
+  var base = "https://github.com/buttermark/releases/releases/latest/download/";
+  var link = function (file, text) { return '<a href="' + base + file + '">' + text + "</a>"; };
+  var os = {
+    windows: { name: "Windows", file: "Buttermark-windows-setup.exe", size: "6.5 MB", also: link("Buttermark-windows-setup.exe", "Windows") },
+    macos:   { name: "macOS (Apple silicon)", file: "Buttermark-macos-arm64.dmg", size: "8 MB", also: link("Buttermark-macos-arm64.dmg", "macOS (Apple silicon)") },
+    linux:   { name: "Linux", file: "Buttermark-linux-amd64.deb", size: "10 MB", also: "Linux (" + link("Buttermark-linux-amd64.deb", ".deb") + " · " + link("Buttermark-linux-amd64.AppImage", "AppImage") + ")" }
+  };
+  var p = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "").toLowerCase();
+  var mine = p.indexOf("mac") === 0 ? "macos" : p.indexOf("linux") === 0 ? "linux" : "windows";
+  var others = Object.keys(os).filter(function (k) { return k !== mine; }).map(function (k) { return os[k].also; });
+  var also = mine === "linux" ? "also the " + link("Buttermark-linux-amd64.AppImage", "AppImage") + " · " + others.join(" · ") : "also for " + others.join(" · ");
+  document.querySelectorAll("[data-download]").forEach(function (slot) {
+    slot.innerHTML = '<a class="button" href="' + base + os[mine].file + '"><svg class="bm-icon" aria-hidden="true"><use href="#bm-download"/></svg><span>Download for ' + os[mine].name + '</span><span class="size">' + os[mine].size + "</span></a>" +
+      '<p class="also">' + also + "</p>";
+  });
+})();
+
+// The theme pill: the same choice the landing page keeps (localStorage bm-theme).
+(function () {
+  var DARK = { evening: true, "midnight-oil": true };
+  var html = document.documentElement;
+  var items = document.querySelectorAll("#theme-menu [data-theme]");
+  var pill = document.getElementById("pill"), menu = document.getElementById("theme-menu"), icon = document.getElementById("pill-icon");
+  function paint(id) {
+    icon.setAttribute("href", DARK[id] ? "#bm-theme-dark" : "#bm-theme-light");
+    items.forEach(function (b) { b.setAttribute("aria-checked", String(b.dataset.theme === id)); });
+  }
+  function setTheme(id) {
+    html.dataset.theme = id;
+    try { localStorage.setItem("bm-theme", id); } catch (e) {}
+    paint(id);
+  }
+  paint(html.dataset.theme || "fresh");
+  function open(on) { menu.hidden = !on; pill.setAttribute("aria-expanded", String(on)); if (on) items[0].focus(); }
+  pill.addEventListener("click", function () { open(menu.hidden); });
+  items.forEach(function (b) { b.addEventListener("click", function () { setTheme(b.dataset.theme); open(false); pill.focus(); }); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { open(false); pill.focus(); } });
+  document.addEventListener("click", function (e) { if (!menu.hidden && !menu.contains(e.target) && e.target !== pill && !pill.contains(e.target)) open(false); });
+})();
+</script>
+<script src="../assets/editor.js"></script>
+</body>
+</html>

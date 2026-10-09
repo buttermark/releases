@@ -1,0 +1,338 @@
+/*
+ * Buttermark design tokens — the theme-independent base.
+ * A theme is exactly this: a flat file of token values. No component may
+ * hardcode a color, font, size, spacing, or radius — everything routes
+ * through these custom properties (architecture.md §3.6).
+ *
+ * Colors live in themes/butter-light.css and themes/butter-dark.css;
+ * @font-face for the bundled families lives in fonts/fonts.css.
+ */
+:root {
+  /* ---- type stack (bundled, PT-9) ---- */
+  --bm-font-serif: "Literata", Georgia, serif;
+  --bm-font-sans: "Atkinson Hyperlegible", "Segoe UI", Roboto, sans-serif;
+  --bm-font-ui: "Inter", "Segoe UI", Roboto, sans-serif;
+  --bm-font-mono: "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+
+  /* Document body font. Serif by default; the welcome-document toggle (and
+     the future settings UI) flips it by setting data-bm-body="sans" on the
+     root element — see below. */
+  --bm-font-body: var(--bm-font-serif);
+
+  /* ---- typography ---- */
+  --bm-font-size: 16px;              /* D1: met in the middle (kit 15 / shipped 17) */
+  --bm-line-height: 1.75;
+  /* Normalize apparent size across body fonts: every family renders with
+     Literata's x-height ratio (font-size-adjust), so switching serif/sans
+     never makes the text look bigger or smaller. Code and buttons opt out. */
+  --bm-x-height: 0.506;
+  --bm-strong-weight: 700;
+  --bm-heading-weight: 650;
+  --bm-heading-line-height: 1.3;
+  --bm-h1-size: 1.85em;
+  --bm-h2-size: 1.5em;
+  --bm-h3-size: 1.25em;
+  --bm-h4-size: 1.1em;
+  --bm-h5-size: 1em;
+  --bm-h6-size: 0.9em;
+  --bm-code-size: 0.88em;
+
+  /* ---- UI type scale (chrome ONLY — the document never uses these) ---- */
+  --bm-text-xs: 11px;
+  --bm-text-sm: 12.5px;
+  --bm-text-base: 13px;
+  --bm-leading-ui: 1.45;
+
+  /* ---- spacing scale (4px base; chrome layout) ---- */
+  --bm-space-1: 4px;
+  --bm-space-2: 8px;
+  --bm-space-3: 12px;
+  --bm-space-4: 16px;
+  --bm-space-5: 20px;
+  --bm-space-6: 24px;
+  --bm-space-8: 32px;
+  --bm-space-10: 40px;
+
+  /* ---- layout & spacing ---- */
+  /* Reading column in em, NOT ch: ch is font-dependent (Literata 68ch ≈
+     670px, Atkinson 68ch ≈ 749px), and the column must not move when the
+     body font toggles. 39.5em ≈ the old 68ch of Literata. */
+  --bm-measure: 39.5em;
+  --bm-space-page-y: 56px;
+  --bm-space-page-x: 32px;
+  --bm-heading-gap-top: 0.7em;
+  --bm-heading-gap-bottom: 0.15em;
+  --bm-code-pad-y: 0.08em;
+  --bm-code-pad-x: 0.35em;
+  --bm-code-block-pad-x: 0.9em;      /* fenced-code panel side padding */
+  --bm-code-line-height: 1.55;       /* denser than prose; code reads in blocks */
+
+  /* ---- controls ---- */
+  --bm-button-size: 0.85em;
+  --bm-button-pad: 0.1em 0.6em;
+
+  /* ---- chrome shell (S1) ----
+     The title-bar area and status bar are the only resting chrome, and
+     every number here comes from the Library: title bar 44px (§10),
+     status bar one line at 11.5px (§03/§12). The window-button width is
+     the Windows caption metric — the trio reads as native there and is
+     harmless elsewhere. */
+  --bm-titlebar-height: 36px;        /* 44 → 36, Leandro's feel verdict */
+  --bm-titlebar-pad-x: 14px;
+  --bm-window-button-width: 46px;
+  --bm-traffic-lights-width: 78px;   /* macOS reserves its own left inset */
+  --bm-statusbar-pad-y: 6px;
+  --bm-statusbar-pad-x: 14px;
+  /* ONE LINE, FOREVER (Leandro, 2026-08-23). The bar's height is a
+     CONSTANT, not a consequence: it must not move by a pixel as segments
+     drop, and left to its content it did — a line of text sits 0.67px
+     taller than the storage glyph that outlives it. Every metric in this
+     bar is already a fixed px (the status text does not take the type
+     scale), so a fixed height belongs with them. */
+  --bm-statusbar-h: 30px;
+  --bm-text-status: 11.5px;          /* the status line, and only it */
+  --bm-text-mono-status: 10.5px;     /* Ln/Col — a machine string, so mono */
+  /* Read mode's strip (ruling 9; the kit's read-mode card, §04): one line
+     at the top of the document area — 9px above and below a 12px crumb,
+     the remaining-time text at the status line's own size, and a 90×3
+     hairline. */
+  --bm-strip-height: 34px;
+  --bm-strip-pad-x: 20px;
+  --bm-text-strip: 12px;
+  --bm-strip-meter-width: 90px;
+  /* The collapsed-section note ("collapsed · 840 words"). FIXED, not an
+     em: it renders inside the heading's own line, so an em-based size grew
+     with the heading (Leandro, 2026-08-19 — "too big"). */
+  --bm-fold-note-size: 16px;
+  /* The front-matter strip's key/value grid (v3). The KEY is one step down
+     the scale from the value (Leandro, 2026-08-19). The values are the
+     strip's own `--bm-button-size`, which is 0.85em → **13.6px** at the
+     document's base size, not the 16px the ask assumed; so the next step
+     down is 12px, not 11.5px. 11.5px is the step below that and belongs to
+     the status line — a notch smaller again if the 12px reads too close. */
+  --bm-fm-key-size: 12px;
+  --bm-fm-column-gap: 14px;
+  --bm-fm-row-gap: 2px;
+  /* 230px is the Menu component's own width; S7's accordion indents the
+     open group's rows under their header, which cost the label column 11px
+     and wrapped "Reopen closed tab" onto two lines in the real window. 248
+     gives the labels MORE room than they had before the indent existed. */
+  --bm-menu-width: 248px;
+  --bm-menu-pad: 6px;
+  --bm-menu-row-pad: 8px 11px;
+  /* S7's accordion: the open group's rows sit indented under their header,
+     so the card reads as sections rather than a list with labels in it. */
+  --bm-menu-group-indent: 22px;
+  /* Finding things (S5), from the kit: CommandPalette is 420 wide (the
+     shared overlay — quick-open now, the palette in S7), FindBar 470. The
+     overlay sits high rather than centred, so the document under it stays
+     readable while a name is being typed. */
+  --bm-overlay-width: 420px;
+  --bm-overlay-top: 14vh;
+  --bm-overlay-list-max: 46vh;
+  --bm-findbar-width: 470px;
+  /* The inline `[[` completion (FL-13, the inline round). Narrower than the
+     modal overlay on purpose: it floats OVER the writer's sentence, so it
+     must cover as little of it as a file name allows. The list is short for
+     the same reason — six rows, not half the window. */
+  --bm-inline-panel-width: 300px;
+  --bm-inline-panel-list-max: 216px;
+  /* The floating toolbar (WS-7, S7), from the kit's FloatingToolbar: 30px
+     buttons, 2px between them, 4px of card padding, radius-xl. It is the
+     one surface whose numbers the Library states outright. */
+  --bm-toolbar-button: 30px;
+  --bm-toolbar-gap: 2px;
+  --bm-toolbar-pad: 4px;
+  --bm-toolbar-divider-height: 18px;
+  /* PT-8's page dialog: the DS Dialog's own width, and the reading
+     measure's comfort range — the width slider's two ends. 26em is a
+     narrow column that still holds a sentence; 64em is as wide as prose
+     stays readable, past which the eye loses the line's start. */
+  /* 480 → 620 (Leandro, 2026-08-21). The width is FIXED and comfortable
+     enough to hold every control at its widest state at once: the
+     description column at its 250px cap, the slider, the readout's
+     reserved slot and a Reset that is now always present. At 480 the
+     sentence column was squeezed to three and four lines and the row's
+     three fixed columns nearly met — S7 already had to make the slider
+     give up width to stop them overlapping. Nothing in the card resizes,
+     because nothing in the card is sized by its content. */
+  --bm-dialog-width: 620px;
+  --bm-dialog-title-size: 17px;      /* the kit's Dialog title, in the doc face */
+  --bm-measure-min: 26em;
+  --bm-measure-max: 64em;
+  /* Settings rows and their controls (the DS SettingRow / Slider /
+     SegmentedControl). The 24px button floor is the target minimum the
+     a11y invariant asks for and the pin already uses. */
+  --bm-button-min: 26px;
+  --bm-setting-description-width: 250px;
+  --bm-slider-width: 172px;
+  --bm-slider-track: 4px;
+  --bm-slider-thumb: 14px;
+  /* THE READOUT'S SLOT (Leandro, 2026-08-21): fixed, and wide enough for
+     the longest string any of the three sliders prints — "Full window",
+     eleven characters of JetBrains Mono at the status size. It was a
+     56px MINIMUM, which "39.5em" already exceeded and "Full window" blew
+     past, shoving the track a dozen pixels on the last stop. */
+  --bm-slider-readout-width: 84px;
+  --bm-segment-height: 26px;
+  /* SETTINGS (Phase 3 S1): the Page dialog grown into every setting. The
+     DS SettingsNav is 188px; 540px beside it holds a SettingRow with its
+     250px sentence, a control and the quiet Reset — and a Windows chord
+     string with the ~96px the DS asks to reserve. 640px tall is the card
+     at the 789px window the menu's own history names, with room to spare;
+     smaller windows shrink it and the body scrolls sooner. */
+  --bm-settings-width: 760px;
+  --bm-settings-height: 640px;
+  --bm-settings-nav-width: 188px;
+  --bm-settings-tab-height: 30px;
+  /* The DS Toggle: 36×21, a 16px knob. */
+  --bm-switch-width: 36px;
+  --bm-switch-height: 21px;
+  --bm-switch-knob: 16px;
+  /* Fields (a number, a clock) and the DS KeyRecorder at 168 + room. */
+  --bm-field-height: 30px;
+  --bm-field-width: 104px;
+  --bm-keyrec-width: 176px;
+  --bm-icon-chrome: 16px;            /* the legibility floor */
+  --bm-icon-menu: 18px;              /* menu and toolbar rows */
+  /* ICON WEIGHT (Leandro, 2026-08-21) — one sprite serves both. The paths
+     are canonical and are never duplicated for a variant; the stroke is
+     the only thing that changes, and it changes here. NORMAL is the
+     default everywhere; LIGHT is used only where Leandro has said so (the
+     sidebar pin, the Contents header glyph). The sprite's symbols carry no
+     stroke-width of their own any more, so this value INHERITS into every
+     `<use>` — see the note at the top of assets/icons.svg. */
+  --bm-icon-stroke: 1.5;
+  --bm-icon-stroke-light: 1;
+  /* Tabs (S2), from the Library's Tab: 7×14 padding, 12.5px, radius-lg on
+     the top corners, a 6px butter dot for unsaved changes. The width band
+     is ours: tabs shrink to the floor before the strip scrolls. */
+  --bm-tab-pad-y: 7px;
+  --bm-tab-pad-x: 14px;
+  --bm-tab-min-width: 72px;
+  --bm-tab-max-width: 220px;
+  --bm-tab-dot: 6px;
+  --bm-tab-top: 4px;                 /* tabs hang 4px below the window's top edge (Leandro) */
+  /* The strip's OUTER inset (Leandro, 2026-08-21): 4px each side, so the
+     first tab sits 4px from the sidebar's edge and the strip's right end
+     stops 4px short of the window controls' reserved zone. It was 12px,
+     which read as a gap the tabs had been pushed into. The reserved zone
+     itself is untouched — it is the grid's own `auto` column, and tabs
+     still cannot slide under the trio. */
+  --bm-tab-strip-pad: 4px;
+  /* Scrollbars (S2 feedback): the gutter, and the transparent inset that
+     makes the thumb thinner than the gutter it lives in. */
+  /* the sidebar (S4, recomposed S4.5 — Leandro's redesign 2026-08-16):
+     a full-height left column that rests as a 40px RAIL, hover-expands as
+     an overlay and pins to dock. 190px is the kit's column and the default
+     width; the writer drags it between the min and 35% of the window
+     (`--bm-sidebar-user-width` is what the drag sets; CSS clamps it). The
+     row metrics are SidebarItem's and OutlineItem's, unchanged. */
+  /* THE RAIL IS WHAT FITS AROUND THE ICON (Leandro, 2026-08-21): the brand
+     mark reads closer to the edge than everything under it, because its
+     inset was whatever CENTRED it in a 40px rail — 12px against the
+     panel's 16. The relationship is unchanged and still load-bearing (the
+     icon must not move by a pixel when the bar expands, so its inset has
+     to be the rail's centring); what changed is which end is the law. The
+     PANEL INSET is, and the rail is sized so that centring in it lands on
+     exactly that number. Costs the resting column ~8px of width. */
+  --bm-rail-width: calc(var(--bm-panel-inset) * 2 + var(--bm-brand-icon-width));
+  --bm-sidebar-width: 220px;          /* the default (double-click the divider) */
+  /* 200 since 2026-08-21: the panel inset costs 32px of every row, and a
+     floor of 180 strangled the filenames it was meant to protect. */
+  --bm-sidebar-min-width: 200px;
+  --bm-sidebar-max-width: 35vw;
+  --bm-sidebar-header-height: 40px;   /* glyph · wordmark · pin; also the rail's glyph slot */
+  /* the brand corner (Leandro 2026-08-17: the logo IS the menu — the real
+     lockup in the header, the icon alone in the rail; assets used as they
+     are, sized to sit inside the 40px header — the bars never grow) */
+  /* THE BRAND IS TWO ELEMENTS NOW (Leandro, 2026-08-21): the icon, which
+     is identical in the rail and in the expanded panel and never moves or
+     rescales by a pixel, and the wordmark beside it, which the expansion
+     REVEALS. The single-lockup asset is retired from the app and stays the
+     SPACING REFERENCE: measured out of buttermark-logo.svg (749×80), the
+     icon sits at (0,0) 92×80 and the wordmark at (144,1) 605×77 — so the
+     gap is 52 units and the type is 77/80 of the icon's height, and every
+     ratio below is that measurement, not an eye.
+
+     14px is the ceiling, not a taste: the icon's inset, the icon, the gap,
+     the wordmark, the pin and the paddings have to fit inside
+     `--bm-sidebar-min-width`, which puts the icon at 14.6px at most. The
+     rail's icon comes DOWN to it (it was 20px, and that mismatch — 20 in
+     the rail, 14 in the header's lockup — was the rescale on expand). */
+  --bm-brand-icon-height: 14px;
+  --bm-brand-icon-width: calc(var(--bm-brand-icon-height) * 92 / 80);
+  /* The icon's distance from the column's left edge, in BOTH states. It is
+     what centres the icon in the rail, so one number gives the rail its
+     centring and the panel its identical position — and since the rail is
+     now sized FROM the panel inset, that one number IS the panel inset:
+     the logo starts on the same line as the workspace name below it. */
+  --bm-brand-inset: calc((var(--bm-rail-width) - var(--bm-brand-icon-width)) / 2);
+  --bm-brand-gap: calc(var(--bm-brand-icon-height) * 52 / 80);
+  --bm-wordmark-height: calc(var(--bm-brand-icon-height) * 77 / 80);
+  --bm-contents-width: 220px;         /* the right Contents panel */
+  --bm-divider-hit: 8px;              /* the resize handle's grab width (1px drawn) */
+  --bm-pane-min-share: 0.2;           /* FL-11: neither LENS of a dual view shrinks below a fifth of its pane */
+  --bm-pane-min-width: 220px;         /* FL-11 №4: a document-split column never goes narrower; the add-a-pane affordances disable when another column of this cannot fit */
+  --bm-sidebar-pad: 8px;
+  /* THE PANEL INSET (Leandro, 2026-08-21): how far the CONTENT of the
+     Explorer and the Contents panel sits from their edges — headers, row
+     text, entries, the rename field. Their hover and selection surfaces
+     do NOT take it: those bleed the full width of the panel, because an
+     inset highlight reads as a floating chip. One value, both panels. */
+  --bm-panel-inset: 16px;
+  --bm-sidebar-row-pad-y: 5px;
+  --bm-sidebar-indent: 14px;          /* one tree level */
+  --bm-sidebar-row-size: 12.5px;
+  --bm-section-label-size: 10.5px;    /* the group title — the only uppercase text in the app */
+  --bm-section-label-tracking: 0.06em;
+  --bm-outline-l2-size: 12px;
+  --bm-outline-l3-size: 11.5px;
+  --bm-outline-rule: 2px;             /* the active section's butter rule */
+  /* Air between chapters in Contents (Leandro, 2026-08-21): a top-level
+     heading starts a section, and the panel reads as sections rather than
+     as one long list. Every H1 but the first takes this above it. */
+  --bm-outline-chapter-gap: var(--bm-space-4);
+
+  --bm-scrollbar-size: 10px;
+  --bm-scrollbar-inset: 3px;
+
+  /* ---- shape ----
+     Container radius scale (D4): controls stay small, containers may
+     exceed the old 12px control max deliberately (menus 12, palette 14,
+     cards 16). The 8px law for state-changing controls is --bm-radius. */
+  --bm-radius-sm: 5px;               /* checkboxes */
+  --bm-radius-md: 7px;               /* icon buttons, menu rows */
+  --bm-radius-lg: 8px;               /* buttons, tabs, palette rows */
+  --bm-radius-xl: 10px;              /* toolbar pill, popovers */
+  --bm-radius-2xl: 12px;             /* toasts, menus */
+  --bm-radius-3xl: 14px;             /* command palette */
+  --bm-radius-card: 16px;
+  --bm-radius: var(--bm-radius-lg);  /* state-changing controls — the law */
+  --bm-radius-code: 4px;
+  --bm-cursor-width: 2px;
+
+  /* ---- motion (WS-18 doctrine: fast, interruptible) ---- */
+  --bm-motion-fast: 120ms;
+  --bm-motion-base: 150ms;           /* hard ceiling */
+  /* THE ONE CURVE (Leandro, 2026-08-21). Every animation in the app takes
+     this easing — the sidebar, the folder slides, Contents, the overlays,
+     the toolbar, the fold melt-ins. It replaced `--bm-ease-melt`, which
+     was `cubic-bezier(0.25, 0.1, 0.25, 1)` — CSS's own `ease`, and
+     therefore symmetric: it eased IN as well as out, so a 120ms motion
+     spent its first frames going nowhere and read as a hesitation rather
+     than a departure. This one leaves at full speed and decelerates into
+     its landing, which is what "the thing arrives and settles" means.
+     Durations are untouched; reduced motion still turns all of it off. */
+  --bm-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --bm-reveal-ms: 80ms;              /* heading-mark opacity fade (pre-dates the scale) */
+  /* the soft pair's own clocks (v1.x №1) — the page's, not the chrome's:
+     ink-settle is the calibrated exception (Leandro, S0: 0.4 → 1 over
+     180ms); the caret glide is faster than any chrome motion */
+  --bm-ink-settle-ms: 180ms;
+  --bm-caret-glide-ms: 80ms;
+}
+
+:root[data-bm-body="sans"] {
+  --bm-font-body: var(--bm-font-sans);
+}
